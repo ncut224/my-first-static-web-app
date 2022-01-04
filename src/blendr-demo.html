@@ -1,0 +1,124 @@
+<html>
+<head>
+<title>Demo Embedded Hub</title>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js" />
+<script type="text/javascript">
+</script>
+</head>
+
+<body>
+	<div>
+		<ul
+			style="list-style-type: none; margin: 0; padding: 0; overflow: hidden; background-color: #333">
+			<li style="display: inline; float: left;"><a
+				style="display: block; color: white; text-align: center; padding: 14px 16px; text-decoration: none;"
+				href="default.asp">Home</a></li>
+			<li style="display: inline; float: left;"><a
+				style="display: block; color: white; text-align: center; padding: 14px 16px; text-decoration: none;"
+				href="news.asp">News</a></li>
+			<li style="display: inline; float: left;"><a
+				style="display: block; color: white; text-align: center; padding: 14px 16px; text-decoration: none;"
+				href="contact.asp">Contact</a></li>
+			<li style="display: inline; float: left;"><a
+				style="display: block; color: white; text-align: center; padding: 14px 16px; text-decoration: none;"
+				href="about.asp">About</a></li>
+		</ul>
+		<!--<b>My core site</b>-->
+	</div>
+	<div
+		style="background-image: url('https://freellustrustrations.s3.us-east-2.amazonaws.com/free-images/freeimg_37237299freejpg850.jpg'); background-repeat: no-repeat; background-attachment: fixed; background-size: cover;">
+		<iframe id="myFrame"
+			style="width: 1200; height: 800; padding-left: 150"></iframe>
+	</div>
+	<script type="text/javascript">
+function base64url(source) {
+  // Encode in classical base64
+  encodedSource = CryptoJS.enc.Base64.stringify(source);
+
+  // Remove padding equal characters
+  encodedSource = encodedSource.replace(/=+$/, '');
+
+  // Replace characters according to base64url specifications
+  encodedSource = encodedSource.replace(/\+/g, '-');
+  encodedSource = encodedSource.replace(/\//g, '_');
+
+  return encodedSource;
+}
+
+ window.onload = function ()
+{
+	//Customerspecific inputs
+	var secret = "rKiH7RYMumLanVci159E4CKJ2cpHtsrn"; // Your api key, only for demo-purposes. The secret should not be used client-side!!!
+	var customername = "billzhang";
+	var templateguid = "ca117f80-5371-11ec-a356-138e0dce8e2f";
+	//var widgetguid = "d70773c0-3f84-11eb-8a1f-098f644623a9";
+
+	//Header with hashing algo
+	var header = {
+	"alg": "HS256",
+	"typ": "JWT"
+	};
+	
+	//
+	var stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));
+	var encodedHeader = base64url(stringifiedHeader);
+
+	//Build up of the data
+	var data = 
+	{
+		"exp": Math.floor(Date.now() / 1000)+3000,
+		"iat": Math.floor(Date.now() / 1000),
+		"account":
+		{
+			// Specify your customers account info, external_id needs to be unique
+			"external_id":"123456789",
+			"name": "lhq2"
+		},
+		"embed": {
+		    "mode": "redirect", //choose between a redirect or listening to events in the parent
+		    "target": "current", //only for mode=redirect, where to redirect
+		    "redirect_url": "http://lhq.vaiwan.com/user" //only for mode=redirect
+  		}
+	};
+
+	var stringifiedData = CryptoJS.enc.Utf8.parse(JSON.stringify(data));
+	var encodedData = base64url(stringifiedData);
+
+	//the token will consist of both the header and the data
+	var token = encodedHeader + "." + encodedData;
+
+	//use the token secret to sign the token. 
+	var signature = CryptoJS.HmacSHA256(token, secret);
+	
+	//base64-urlencode the signed token
+	signature = base64url(signature);
+
+	var signedToken = token + "." + signature;
+
+	//Alternative URLS: Home page - Template List - Template Install Link
+	//var url = "https://" + customername + ".admin.blendr.io/sso/home/widgets?jwt="+signedToken;
+	//var url = "https://" + customername + ".admin.blendr.io/sso/templates?jwt="+signedToken;
+	var url = "https://"+ customername + ".admin.blendr.io/sso/templates/"+ templateguid +"/install?jwt="+signedToken;
+	//var url = "https://"+ customername + ".admin.blendr.io/sso/widgets/"+ widgetguid +"/settings?jwt="+signedToken;
+	
+	document.getElementById('myFrame').src = url;
+}
+ 
+ window.addEventListener('message', (event) => {
+	 console.log(event.data.event)
+	 console.log(event.data)
+	   if (event.data.event === 'setup-complete') {
+	     console.log('The setup has completed')
+	   }
+	   if (event.data.event === 'setup-failed') {
+	     console.log('The setup failed')
+	   }
+	   if (event.data.event === 'setup-canceled') { //note: canceled with one L (not two)
+	     console.log('The setup was canceled by the user')
+	   }
+	 }, false)
+ 
+</script>
+</body>
+</html>
